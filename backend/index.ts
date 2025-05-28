@@ -18,7 +18,7 @@ import messageRoutes from "./src/routes/message.routes";
 //configure "dotenv".
 dotenv.config();
 
-const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT;
+const FRONTEND_URL = process.env.VITE_FRONTEND_URL;
 
 //'http' - phone(only low-level communication)
 //'express()' - mobile app(makes calls,messages easier)
@@ -31,7 +31,7 @@ const io = new Server(server, {
   //create socket server using http server.
   cors: {
     //origin:'*',allow all origins for now.
-    origin: `http://localhost:${FRONTEND_PORT}`, //❌Do i need to change this while deploying.❌
+    origin: `${FRONTEND_URL}`, //❌Do i need to change this while deploying.❌
     methods: ["GET", "POST"],
   },
 });
@@ -108,9 +108,9 @@ io.on("connection", (socket) => {
   });
 });
 
-const BACKEND_PORT = process.env.BACKEND_PORT || 5000;
+const BACKEND_PORT = process.env.VITE_BACKEND_PORT || 5000;
 
 //start server.
 server.listen(BACKEND_PORT, () => {
-  console.log(`Server running on http://localhost:${BACKEND_PORT}`);
+  console.log(`Server running on ${process.env.VITE_BACKEND_URL}`);
 });

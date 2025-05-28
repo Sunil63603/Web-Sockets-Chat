@@ -32,7 +32,7 @@ const ChatList: React.FC = () => {
   const activeChat = useSelector(
     (state: RootState) => state.activeChat.selectedChat
   );
-  const chatId = activeChat?._id;
+  // const chatId = activeChat?._id;
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -88,13 +88,15 @@ const ChatList: React.FC = () => {
           >
             {chat.isGroupChat
               ? chat.chatName
-              : getOtherUserName(chat.users, userId)}
+              : // @ts-ignore
+                getOtherUserName(chat.users, userId)}
           </div>
         ))
       )}
       <h2 className="font-bold text-lg mt-4">Start New Chat</h2>
       {allUsers.map((user) => (
         <div
+          // @ts-ignore
           key={user._id}
           className="cursor-pointer p-4 hover:bg-gray-200 rounded w-full mb-2"
           onClick={() => handleUserClick(user)}

@@ -31,7 +31,8 @@ const io = new Server(server, {
   //create socket server using http server.
   cors: {
     //origin:'*',allow all origins for now.
-    origin: `${FRONTEND_URL}`, //❌Do i need to change this while deploying.❌
+    // origin: `${FRONTEND_URL}`, //❌Do i need to change this while deploying.❌
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });

@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { IUser } from "../../../backend/src/models/User";
 import type { IMessage } from "../../../backend/src/models/Message";
-import mongoose from "mongoose";
+// import mongoose from "mongoose";
 
 //hardcoded for now(Temporary).
 export const userId = "682ad1ad304268590514ecd8";

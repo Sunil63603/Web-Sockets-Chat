@@ -2,8 +2,14 @@ import React, { useEffect, useState } from "react";
 //React is used to make component as Functional component.
 //useEffect is used to 'join room' whenever chatId changes.
 //useState is used to store chatId,message,and messages[].
-import { getChats } from "../services/chatApi";
 import type { IMessage } from "../../../backend/src/models/Message";
+
+import { userId } from "../services/chatApi";
+
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+
+import { getMessagesByChatId } from "../services/chatApi";
 
 import socket from "../socket";
 import {
@@ -15,26 +21,43 @@ import {
   Typography,
 } from "@mui/material";
 
-const ChatRoom: React.FC = () => {
-  const [chatId] = useState<string>("group-1"); //hardcoded for now.
+const ActiveChat: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
 
-  const [chatList, setChatList] = useState<IMessage[]>([]);
+  const [messages, setMessages] = useState<IMessage[]>([]);
+
+  const activeChat = useSelector(
+    (state: RootState) => state.activeChat.selectedChat
+  );
+  const chatId = activeChat?._id;
 
   useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const chats = await getChats();
+    const fetchMessages = async () => {
+      if (!chatId) return;
 
-        setChatList(chats);
+      try {
+        const data = await getMessagesByChatId(chatId);
+
+        setMessages(data);
       } catch (error) {
-        console.error("Failed to fetch chats:", error);
+        console.error("Failed to fetch messages:", error);
       }
     };
 
-    fetchChats();
+    fetchMessages();
+  }, [chatId]);
+
+  useEffect(() => {
+    //connect to socket.
+    socket.on("connection", () => {
+      console.log("Connected to socket server");
+    });
+
+    return () => {
+      socket.off("connection");
+    };
   }, []);
 
   useEffect(() => {
@@ -46,8 +69,8 @@ const ChatRoom: React.FC = () => {
 
     //socket.on - listen for an event.
     //'receive-message' will emit this when new message is received.
-    socket.on("receive-message", (data: IMessage) => {
-      setChatList((prev) => [...prev, data]); //this function runs when message arrives.
+    socket.on("receive-message", (msg: IMessage) => {
+      setMessages((prev) => [...prev, msg]); //this function runs when message arrives.
     }); //show message.
 
     //socket.on - listen for an event.
@@ -77,6 +100,7 @@ const ChatRoom: React.FC = () => {
       const messageData = {
         chatId,
         content: message,
+        userId: userId,
       };
 
       //step 4:Already joined chat room, now just send-message to the server.
@@ -87,7 +111,7 @@ const ChatRoom: React.FC = () => {
     }
   };
 
-  return (
+  return activeChat ? (
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 2 }}>
       <Typography variant="h5" gutterBottom>
         Chat Room:{chatId}
@@ -97,11 +121,17 @@ const ChatRoom: React.FC = () => {
         sx={{ p: 2, mb: 2, maxHeight: 300, overflowY: "auto" }}
       >
         <Stack spacing={1}>
-          {chatList.map((msg, i) => (
-            <Typography key={i} variant="body2">
-              {msg.content}
+          {messages.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No messages
             </Typography>
-          ))}
+          ) : (
+            messages.map((msg, i) => (
+              <Typography key={i} variant="body2">
+                {msg.content}
+              </Typography>
+            ))
+          )}
         </Stack>
       </Paper>
       {typingUser && (
@@ -133,7 +163,11 @@ const ChatRoom: React.FC = () => {
         Send
       </Button>
     </Box>
+  ) : (
+    <div className="flex-1 p-4">
+      <p>Select a chat to start messaging</p>
+    </div>
   );
 };
 
-export default ChatRoom;
+export default ActiveChat;

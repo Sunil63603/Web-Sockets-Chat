@@ -9,10 +9,6 @@ import {
   Button,
   Typography,
   Autocomplete,
-  FormControl,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
 import { userId } from "../services/chatApi";
 
@@ -20,7 +16,7 @@ const CreateGroupChatForm: React.FC = () => {
   const [grpName, setGrpName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<IUser[]>([]);
-  const [groupAdmin, setGroupAdmin] = useState(""); //Temporary, we'll set manually for now.
+  // const [groupAdmin, setGroupAdmin] = useState(""); //Temporary, we'll set manually for now.
 
   const currentUserId = userId;
 
@@ -42,12 +38,12 @@ const CreateGroupChatForm: React.FC = () => {
     e.preventDefault(); //prevents form reload on submit.
 
     //extract only user IDs from selected user objects.
-    const userIds = selectedUsers.map((user) => user._id);
+    const selectedUserIds = selectedUsers.map((user) => user._id);
 
     try {
       const newGroup = await createGroupChat(
         grpName,
-        selectedUsers,
+        selectedUserIds,
         currentUserId
       );
       console.log("Group Created:", newGroup);
@@ -97,7 +93,7 @@ const CreateGroupChatForm: React.FC = () => {
           multiple
           options={allUsers}
           getOptionLabel={(option) => option.name}
-          onChange={(e, newValue) => setSelectedUsers(newValue)}
+          onChange={(_, newValue) => setSelectedUsers(newValue)}
           renderInput={(params) => (
             <TextField
               {...params}

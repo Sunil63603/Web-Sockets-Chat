@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Chat } from "../models/Chat";
-import { User } from "../models/User";
 
 //step 1:create or reuse one-to-one chat.
 export const createPersonalChat = async (req: any, res: any) => {
@@ -47,7 +46,6 @@ export const getUserChats = async (req: Request, res: Response) => {
       .populate("users") //this replaces user IDs inside 'users' array with actual user data from user collection.
       .populate("latestMessage"); //this replaces the latestMessage ID with the full message object.
     //this makes it easier to show last message in chat preview.
-    console.log("console log from chat controller", chats);
 
     res.status(200).json(chats);
   } catch (error) {
@@ -77,6 +75,8 @@ export const createGroupChat = async (req: any, res: any) => {
       isGroupChat: true,
       users: allUsers,
       groupAdmin: groupAdmin,
+      messages: [],
+      latestMessage: null,
     });
 
     //step 6:populate all group members.
@@ -85,8 +85,38 @@ export const createGroupChat = async (req: any, res: any) => {
     ).populate("groupAdmin");
 
     //step 5:return success response.
-    res.status(201).json(groupChat);
+    res.status(201).json(fullGroupChat);
   } catch (error) {
     res.status(500).json({ message: "Error creating group chat", error });
+  }
+};
+
+//step 1:Write a function to access or create one-to-one chat.
+export const accessOrCreateOneToOneChat = async (req: any, res: any) => {
+  try {
+    //step 2:extract 'myId' and 'frndId' from request params.
+    const { myId, frndId } = req.params;
+
+    //step 3:check if chat already exists.
+    let chat = await Chat.findOne({
+      isGroupChat: false,
+      users: { $all: [myId, frndId] }, //both users must be in 'users'.
+    }).populate("users");
+
+    if (!chat) {
+      //step 4:If not exists, create new chat.
+      chat = await Chat.create({
+        isGroupChat: false,
+        users: [myId, frndId],
+      });
+
+      chat = await chat.populate("users");
+    }
+
+    res.status(200).json(chat);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error accessing or creating chat", error });
   }
 };

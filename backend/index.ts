@@ -3,6 +3,11 @@ import http from "http"; //this protocol is used to access web-pages.
 import { Server } from "socket.io"; //to sync frontend and backend in realTime.
 import cors from "cors"; //allows frontend to talk with backend while browser tries to prevent this by default.
 import dotenv from "dotenv"; //this is used to load environment variables in backend
+
+import { Message } from "./src/models/Message"; //this is used(to create a message) while user sends a new message.
+import { Chat } from "./src/models/Chat"; //this is also used(while pushing message into particular chat)
+
+import mongoose from "mongoose";
 import connectToDB from "./src/utils/db"; //used to connect to MongoDB database.
 
 //imports all 3 major routes.
@@ -13,7 +18,7 @@ import messageRoutes from "./src/routes/message.routes";
 //configure "dotenv".
 dotenv.config();
 
-const FRONTEND_PORT = process.env.FRONTEND_PORT;
+const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT;
 
 //'http' - phone(only low-level communication)
 //'express()' - mobile app(makes calls,messages easier)
@@ -43,6 +48,12 @@ app.use(express.json()); //JSON requests are automatically parsed to strings in 
 //connect to MongoDB database.
 connectToDB();
 
+mongoose.connection.once("open", () => {
+  console.log("✅ MongoDB connected!");
+});
+
+console.log(mongoose.connection.name);
+
 app.use("/api/users", userRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
@@ -50,7 +61,7 @@ app.use("/api/messages", messageRoutes);
 //'io' is the Socket.io server instance
 //'on' means listen to an eve
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("User connected to this socket", socket.id);
 
   //Join chat room.
   socket.on("join-chat", (chatId) => {
@@ -59,8 +70,26 @@ io.on("connection", (socket) => {
   });
 
   //send message to others in the room.
-  socket.on("send-message", (messageData) => {
-    io.to(messageData.chatId).emit("receive-message", messageData);
+  socket.on("send-message", async ({ chatId, content, userId }) => {
+    try {
+      //1.Create message in 'messages' collection.
+      const newMessage = await Message.create({
+        chatId,
+        sender: userId,
+        content,
+      });
+
+      //2. Push message to messages[] of chats collection.
+      await Chat.findByIdAndUpdate(chatId, {
+        $push: { messages: newMessage._id },
+        $set: { latestMessage: newMessage._id },
+      });
+
+      //3.emit back to all clients in room.
+      io.to(chatId).emit("receive-message", newMessage);
+    } catch (error) {
+      console.log("Error sending message", error);
+    }
   });
 
   //Typing indicator.
@@ -73,8 +102,9 @@ io.on("connection", (socket) => {
     socket.in(chatId).emit("stop-typing", socket.id);
   });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+  socket.on("leave-chat", (chatId) => {
+    socket.leave(chatId);
+    console.log(`User ${socket.id} left chat ${chatId}`);
   });
 });
 

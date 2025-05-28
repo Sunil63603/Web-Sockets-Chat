@@ -33,9 +33,9 @@ export const getMessages = async (req: Request, res: Response) => {
 
   try {
     //step 3:
-    const messages = await Message.find({ chat: chatId }) //find all messages where the 'chat' field is equal to 'chatId'(Give me all messages that belong to this chat room)
+    const messages = await Message.find({ chatId }) //find all messages where the 'chat' field is equal to 'chatId'(Give me all messages that belong to this chat room)
       .populate("sender", "name") //Replace 'sender' ID with full user object, but only include the 'name' field.
-      .populate("chat"); //also replace 'chatId' with full chat object.
+      .populate("chatId"); //also replace 'chatId' with full chat object.
 
     //step 4:success response.
     res.status(200).json(messages);

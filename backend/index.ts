@@ -30,9 +30,9 @@ const server = http.createServer(app); //create http server using express server
 const io = new Server(server, {
   //create socket server using http server.
   cors: {
-    //origin:'*',allow all origins for now.
-    // origin: `${FRONTEND_URL}`, //❌Do i need to change this while deploying.❌
-    origin: "*",
+    // origin: "*", // ❌ Remove this in production
+    // ✅ Replace with your actual deployed frontend URL:
+    origin: "https://web-sockets-chat-roan.vercel.app",
     methods: ["GET", "POST"],
   },
 });
